@@ -209,17 +209,17 @@
     </header>
 
     <!-- Mobile Menu Overlay -->
-    <div id="mobile-menu" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center bg-ink-dark/95 backdrop-blur-md text-ink-cream opacity-0 pointer-events-none">
+    <div id="mobile-menu" class="fixed inset-0 z-[100] hidden flex flex-col items-center justify-center bg-ink-dark/95 backdrop-blur-md text-ink-cream opacity-0 pointer-events-none">
         <button id="mobile-menu-close" class="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-ink-cream/50 hover:text-ink-red transition-colors focus:outline-none pointer-events-auto">
             <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
-        <div class="flex flex-col items-center gap-8 pointer-events-auto">
-            <a href="#artist" class="js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Artist</a>
-            <a href="#works" class="js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Selected Works</a>
-            <button class="js-flashes-open js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all focus:outline-none">Flashes</button>
-            <button class="js-care-open js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all focus:outline-none">Care Guide</button>
-            <a href="#booking" class="js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Inquiry</a>
+        <div class="flex flex-col items-center justify-center w-full gap-8 pointer-events-auto text-center">
+            <a href="#artist" class="js-mobile-link w-full block text-sm tracking-[0.2em] pl-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Artist</a>
+            <a href="#works" class="js-mobile-link w-full block text-sm tracking-[0.2em] pl-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Selected Works</a>
+            <button class="js-flashes-open js-mobile-link w-full block text-center text-sm tracking-[0.2em] pl-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all focus:outline-none">Flashes</button>
+            <button class="js-care-open js-mobile-link w-full block text-center text-sm tracking-[0.2em] pl-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all focus:outline-none">Care Guide</button>
+            <a href="#booking" class="js-mobile-link w-full block text-sm tracking-[0.2em] pl-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Inquiry</a>
         </div>
     </div>
 
@@ -237,7 +237,7 @@
             </button>
 
             <!-- Tabs -->
-            <div class="flex gap-6 md:gap-8 border-b border-ink-dark/10 mb-6 md:mb-8 font-mincho text-base md:text-lg relative z-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
+            <div class="flex justify-center gap-6 md:gap-8 border-b border-ink-dark/10 mb-6 md:mb-8 font-mincho text-base md:text-lg relative z-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
                 <button id="tab-before" class="pb-2 border-b-2 border-ink-red text-ink-red transition-colors focus:outline-none">Before Inking</button>
                 <button id="tab-after" class="pb-2 border-b-2 border-transparent text-ink-dark/40 hover:text-ink-dark transition-colors focus:outline-none">Aftercare</button>
             </div>
@@ -313,15 +313,15 @@
                     <h3 class="font-garamond text-3xl md:text-4xl text-ink-dark">Available Flashes</h3>
                 </div>
                 
-                <div class="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-lg">
-                    <button id="btn-paper-thoughts" class="group relative flex-1 p-6 md:p-8 border border-ink-dark/10 hover:border-ink-red transition-colors duration-500 overflow-hidden bg-[#e8eae3]">
+                <div class="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 w-full max-w-lg mx-auto">
+                    <button id="btn-paper-thoughts" class="group relative flex-1 w-full p-6 md:p-8 border border-ink-dark/10 hover:border-ink-red transition-colors duration-500 overflow-hidden bg-[#e8eae3]">
                         <div class="absolute inset-0 bg-ink-red/5 transform scale-y-0 origin-bottom group-hover:scale-y-100 transition-transform duration-500"></div>
-                        <span class="relative z-10 font-mincho text-lg md:text-xl text-ink-dark group-hover:text-ink-red transition-colors">Paper Thoughts</span>
+                        <span class="relative z-10 font-mincho text-lg md:text-xl text-ink-dark group-hover:text-ink-red transition-colors block text-center w-full">Paper Thoughts</span>
                     </button>
                     
-                    <button id="btn-coraline" class="group relative flex-1 p-6 md:p-8 border border-ink-dark/10 hover:border-ink-red transition-colors duration-500 overflow-hidden bg-[#e8eae3]">
+                    <button id="btn-coraline" class="group relative flex-1 w-full p-6 md:p-8 border border-ink-dark/10 hover:border-ink-red transition-colors duration-500 overflow-hidden bg-[#e8eae3]">
                         <div class="absolute inset-0 bg-ink-red/5 transform scale-y-0 origin-bottom group-hover:scale-y-100 transition-transform duration-500"></div>
-                        <span class="relative z-10 font-mincho text-lg md:text-xl text-ink-dark group-hover:text-ink-red transition-colors">Coraline</span>
+                        <span class="relative z-10 font-mincho text-lg md:text-xl text-ink-dark group-hover:text-ink-red transition-colors block text-center w-full">Coraline</span>
                     </button>
                 </div>
             </div>
