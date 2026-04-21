@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INKSTETIK | Nostalgic Ink</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'ink-red': '#940E0E',
+                        'ink-cream': '#F4F6F0',
+                        'ink-dark': '#222222',
+                    },
+                    fontFamily: {
+                        'mincho': ['"Shippori Mincho"', 'serif'],
+                        'gothic': ['"Zen Kaku Gothic New"', 'sans-serif'],
+                        'garamond': ['"Cormorant Garamond"', 'serif'],
+                    },
+                    transitionTimingFunction: {
+                        'slow-ease': 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- GSAP & ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* Base styles & smooth scrolling */
+        body {
+            background-color: #F4F6F0;
+            color: #222222;
+            overflow-x: hidden;
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            cursor: default;
+        }
+
+        /* Film Grain Overlay */
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.25;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            mix-blend-mode: multiply;
+        }
+        
+        .dark-mode-noise {
+            mix-blend-mode: screen;
+            opacity: 0.08;
+        }
+
+        /* Ambient Three.js Canvas */
+        #ambient-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #dcded8; border-radius: 10px; }
+        .dark-theme ::-webkit-scrollbar-thumb { background: #333; }
+
+        /* Typography Utilities */
+        .text-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+        }
+
+        /* Loading Screen */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background-color: #F4F6F0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Image Placeholder Frames */
+        .poetic-frame {
+            position: relative;
+            overflow: hidden;
+            background: #e8eae3;
+            border-radius: 2px;
+        }
+        .poetic-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(148, 14, 14, 0.05), transparent);
+            pointer-events: none;
+        }
+        
+        /* Outline text */
+        .text-outline {
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(34, 34, 34, 0.15);
+        }
+        
+        /* Masking for GSAP reveals */
+        .reveal-mask {
+            clip-path: inset(0 0 100% 0);
+        }
+
+        /* Carousel Animation */
+        @keyframes scrollCarousel {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-carousel {
+            animation: scrollCarousel 40s linear infinite;
+            will-change: transform;
+        }
+        .carousel-gradient-left {
+            background: linear-gradient(to right, #F4F6F0, transparent);
+        }
+        .carousel-gradient-right {
+            background: linear-gradient(to left, #F4F6F0, transparent);
+        }
+        .dark-theme .carousel-gradient-left {
+            background: linear-gradient(to right, #222222, transparent);
+        }
+        .dark-theme .carousel-gradient-right {
+            background: linear-gradient(to left, #222222, transparent);
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-ink-red selection:text-ink-cream transition-colors duration-1000">
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <div class="flex flex-col items-center">
+            <svg class="w-8 h-8 text-ink-red mb-4 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 22C12 22 20 16 20 10C20 5.58172 16.4183 2 12 2C7.58172 2 4 5.58172 4 10C4 16 12 22 12 22Z" fill="currentColor" fill-opacity="0.1"/>
+            </svg>
+            <span class="font-mincho tracking-[0.3em] text-sm text-ink-dark opacity-70">インクステティック</span>
+        </div>
+    </div>
+
+    <!-- Backgrounds -->
+    <div class="noise-overlay" id="noise"></div>
+    <canvas id="ambient-canvas"></canvas>
+
+    <!-- Navigation / Header -->
+    <header class="fixed top-0 w-full p-4 sm:p-6 md:p-10 flex flex-wrap justify-between items-center z-40 mix-blend-difference text-ink-cream gap-y-4">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="font-garamond text-lg md:text-xl tracking-widest uppercase focus:outline-none cursor-pointer">
+            Inkstetik
+        </button>
+        
+        <div class="flex items-center gap-4 md:gap-6 flex-wrap justify-end">
+            <!-- Artist Link -->
+            <a href="#artist" class="text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1">
+                Artist
+            </a>
+
+            <!-- Works Link -->
+            <a href="#works" class="text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1">
+                Selected Works
+            </a>
+
+            <!-- Flashes Toggle -->
+            <button id="flashes-modal-open" class="text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1 focus:outline-none">
+                Flashes
+            </button>
+
+            <!-- Care Guide Toggle -->
+            <button id="care-modal-open" class="text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1 focus:outline-none">
+                Care Guide
+            </button>
+
+            <!-- Works Link -->
+            <a href="#booking" class="text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1">
+                Inquiry
+            </a>
+        </div>
+    </header>
+
+    <!-- Care Guide Modal -->
+    <div id="care-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center pointer-events-none">
+        <!-- Backdrop -->
+        <div id="care-modal-backdrop" class="absolute inset-0 bg-ink-dark/80 backdrop-blur-sm opacity-0 pointer-events-auto"></div>
+        
+        <!-- Modal Content -->
+        <div id="care-modal-content" class="relative w-full max-w-2xl bg-ink-cream text-ink-dark mx-4 md:mx-0 p-6 sm:p-8 md:p-12 shadow-2xl opacity-0 transform translate-y-8 max-h-[85vh] overflow-y-auto pointer-events-auto poetic-frame">
+            
+            <!-- Close Button -->
+            <button id="care-modal-close" class="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-ink-dark/50 hover:text-ink-red transition-colors focus:outline-none z-10">
+                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- Tabs -->
+            <div class="flex gap-6 md:gap-8 border-b border-ink-dark/10 mb-6 md:mb-8 font-mincho text-base md:text-lg relative z-10 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                <button id="tab-before" class="pb-2 border-b-2 border-ink-red text-ink-red transition-colors focus:outline-none">Before Inking</button>
+                <button id="tab-after" class="pb-2 border-b-2 border-transparent text-ink-dark/40 hover:text-ink-dark transition-colors focus:outline-none">Aftercare</button>
+            </div>
+
+            <!-- Tab Content: Before -->
+            <div id="content-before" class="tab-content relative z-10 space-y-4 md:space-y-6 font-gothic text-xs md:text-sm leading-relaxed tracking-wide">
+                <h3 class="font-garamond text-2xl md:text-3xl text-ink-dark mb-2">Things to do before<br>your tattoo appointment</h3>
+                <p class="italic font-mincho text-ink-dark/60 text-xs md:text-sm mb-6 md:mb-8 leading-loose">
+                    <span class="text-ink-red">⭑.ᐟ</span> as your tattoo appointment approaches, we kindly encourage you to take a few important steps to help ensure a smooth and safe experience on the day of your session.
+                </p>
+                
+                <ul class="space-y-3 md:space-y-4 text-ink-dark/80">
+                    <li><strong class="font-medium text-ink-dark">Hydration:</strong> drink plenty of water in the days leading up to your appointment. hydrated skin takes ink better and promotes faster healing.</li>
+                    <li><strong class="font-medium text-ink-dark">Rest:</strong> being well-rested helps you manage pain and stay calm.</li>
+                    <li><strong class="font-medium text-ink-dark">Eat a meal:</strong> eat a substantial meal before your appointment.</li>
+                    <li><strong class="font-medium text-ink-dark">Skin preparation:</strong> moisturize the area & avoid sunburns.</li>
+                    <li><strong class="font-medium text-ink-dark">Clothing:</strong> wear comfortable, loose-fitting clothing.</li>
+                    <li><strong class="font-medium text-ink-dark">Avoid alcohol & caffeine:</strong> do not drink 24 hours before your appointment.</li>
+                    <li><strong class="font-medium text-ink-dark">Blood-thinning meds:</strong> avoid aspirin, ibuprofen prior to appointment.</li>
+                </ul>
+            </div>
+
+            <!-- Tab Content: After -->
+            <div id="content-after" class="tab-content relative z-10 hidden space-y-4 md:space-y-6 font-gothic text-xs md:text-sm leading-relaxed tracking-wide">
+                <h3 class="font-garamond text-2xl md:text-3xl text-ink-dark mb-2">Things to do after<br>your tattoo appointment</h3>
+                <p class="italic font-mincho text-ink-dark/60 text-xs md:text-sm mb-6 md:mb-8 leading-loose">
+                    <span class="text-ink-red">⭑.ᐟ</span> following your tattoo appointment, we kindly encourage you to adhere to these aftercare guidelines to ensure the best possible outcome for your new tattoo.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                    <div>
+                        <h4 class="font-mincho text-ink-red mb-3 md:mb-4 tracking-widest text-xs border-b border-ink-red/20 pb-2 inline-block">DO'S</h4>
+                        <ul class="space-y-2 md:space-y-3 list-disc list-outside ml-4 text-ink-dark/80">
+                            <li><strong class="font-medium text-ink-dark">Keep it clean:</strong> gently wash 2-3 times daily with lukewarm water and fragrance-free soap.</li>
+                            <li><strong class="font-medium text-ink-dark">Moisturize:</strong> apply thin layer of fragrance-free moisturizer after cleaning.</li>
+                            <li><strong class="font-medium text-ink-dark">Wear loose clothing:</strong> avoid friction over the tattoo.</li>
+                            <li><strong class="font-medium text-ink-dark">Protect from sun:</strong> avoid direct sunlight; use SPF after healed.</li>
+                            <li><strong class="font-medium text-ink-dark">Be patient:</strong> allow natural healing.</li>
+                            <li><strong class="font-medium text-ink-dark">Follow artist instructions:</strong> they know your piece best.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-mincho text-ink-dark/60 mb-3 md:mb-4 tracking-widest text-xs border-b border-ink-dark/10 pb-2 inline-block">DON'TS</h4>
+                        <ul class="space-y-2 md:space-y-3 list-disc list-outside ml-4 text-ink-dark/80">
+                            <li>Remove initial film too soon.</li>
+                            <li>Scratch or pick at scabs.</li>
+                            <li>Submerge in water (swimming / tubs) until fully healed.</li>
+                            <li>Apply harsh / petroleum products.</li>
+                            <li>Avoid over-moisturizing.</li>
+                            <li>Don't wear tight clothing that rubs the tattoo.</li>
+                            <li>If infection signs appear, consult a doctor immediately.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flashes Modal -->
+    <div id="flashes-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center pointer-events-none">
+        <div id="flashes-modal-backdrop" class="absolute inset-0 bg-ink-dark/80 backdrop-blur-sm opacity-0 pointer-events-auto"></div>
+        
+        <div id="flashes-modal-content" class="relative w-full max-w-4xl bg-ink-cream text-ink-dark mx-4 md:mx-0 p-6 sm:p-8 md:p-12 shadow-2xl opacity-0 transform translate-y-8 max-h-[85vh] overflow-y-auto pointer-events-auto poetic-frame">
+            
+            <button id="flashes-modal-close" class="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-ink-dark/50 hover:text-ink-red transition-colors focus:outline-none z-20">
+                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <!-- 1. Menu View -->
+            <div id="flashes-view-menu" class="relative z-10 flex flex-col items-center justify-center min-h-[40vh] space-y-6 md:space-y-8">
+                <div class="text-center mb-2 md:mb-4">
+                    <span class="font-mincho text-ink-red tracking-widest text-xs md:text-sm mb-2 block">フラッシュ</span>
+                    <h3 class="font-garamond text-3xl md:text-4xl text-ink-dark">Available Flashes</h3>
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-lg">
+                    <button id="btn-paper-thoughts" class="group relative flex-1 p-6 md:p-8 border border-ink-dark/10 hover:border-ink-red transition-colors duration-500 overflow-hidden bg-[#e8eae3]">
+                        <div class="absolute inset-0 bg-ink-red/5 transform scale-y-0 origin-bottom group-hover:scale-y-100 transition-transform duration-500"></div>
+                        <span class="relative z-10 font-mincho text-lg md:text-xl text-ink-dark group-hover:text-ink-red transition-colors">Paper Thoughts</span>
+                    </button>
+                    
+                    <button id="btn-coraline" class="group relative flex-1 p-6 md:p-8 border border-ink-dark/10 hover:border-ink-red transition-colors duration-500 overflow-hidden bg-[#e8eae3]">
+                        <div class="absolute inset-0 bg-ink-red/5 transform scale-y-0 origin-bottom group-hover:scale-y-100 transition-transform duration-500"></div>
+                        <span class="relative z-10 font-mincho text-lg md:text-xl text-ink-dark group-hover:text-ink-red transition-colors">Coraline</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Paper Thoughts View -->
+            <div id="flashes-view-paper" class="relative z-10 hidden space-y-8 md:space-y-12">
+                <div class="flex items-center gap-4 mb-4 md:mb-8">
+                    <button class="back-to-menu text-ink-dark/50 hover:text-ink-red flex items-center gap-2 text-xs md:text-sm font-gothic uppercase tracking-widest transition-colors focus:outline-none">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Back
+                    </button>
+                </div>
+
+                <div class="text-center space-y-2 md:space-y-4">
+                    <h3 class="font-garamond text-3xl md:text-4xl text-ink-dark">Paper Thoughts</h3>
+                    <p class="font-gothic text-xs md:text-sm text-ink-dark/60 tracking-widest uppercase">A curated collection of flash designs</p>
+                </div>
+
+                <!-- Layer 1: 2 Images -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                    <div class="aspect-square overflow-hidden bg-[#e0e3da] poetic-frame">
+                        <img src="images/flash-paper-1.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="Paper Thoughts Flash 1">
+                    </div>
+                    <div class="aspect-square overflow-hidden bg-[#e0e3da] poetic-frame">
+                        <img src="images/flash-paper-2.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="Paper Thoughts Flash 2">
+                    </div>
+                </div>
+
+                <!-- Layer 2: Placements (5 images) -->
+                <div class="pt-6 md:pt-8 border-t border-ink-dark/10">
+                    <h4 class="font-mincho text-lg md:text-xl text-ink-red text-center mb-6 md:mb-8">Sample Placements</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+                        <div class="aspect-[4/5] overflow-hidden bg-[#e8eae3]"><img src="images/sample-pt-1.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="Placement 1"></div>
+                        <div class="aspect-[4/5] overflow-hidden bg-[#e8eae3]"><img src="images/sample-pt-2.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="Placement 2"></div>
+                        <div class="aspect-[4/5] overflow-hidden bg-[#e8eae3]"><img src="images/sample-pt-3.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="Placement 3"></div>
+                        <div class="aspect-[4/5] overflow-hidden bg-[#e8eae3]"><img src="images/sample-pt-4.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="Placement 4"></div>
+                        <div class="aspect-[4/5] overflow-hidden bg-[#e8eae3] col-span-2 md:col-span-1"><img src="images/sample-pt-5.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80 md:object-center object-top" alt="Placement 5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Coraline View -->
+            <div id="flashes-view-coraline" class="relative z-10 hidden space-y-8 md:space-y-12">
+                <div class="flex items-center gap-4 mb-4 md:mb-8">
+                    <button class="back-to-menu text-ink-dark/50 hover:text-ink-red flex items-center gap-2 text-xs md:text-sm font-gothic uppercase tracking-widest transition-colors focus:outline-none">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Back
+                    </button>
+                </div>
+
+                <div class="text-center space-y-2 md:space-y-4">
+                    <h3 class="font-garamond text-3xl md:text-4xl text-ink-dark">Coraline</h3>
+                    <p class="font-gothic text-[10px] md:text-sm text-ink-dark/60 tracking-widest uppercase max-w-md mx-auto leading-relaxed">Each design is inspired by the beloved stop-motion classic</p>
+                </div>
+
+                <!-- Layer 1: 1 Image -->
+                <div class="max-w-xl mx-auto">
+                    <div class="aspect-square overflow-hidden bg-[#e0e3da] poetic-frame">
+                        <img src="images/flash-coraline-1.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="Coraline Flash Master">
+                    </div>
+                </div>
+
+                <!-- Layer 2: Placements (9 images) -->
+                <div class="pt-6 md:pt-8 border-t border-ink-dark/10">
+                    <h4 class="font-mincho text-lg md:text-xl text-ink-red text-center mb-6 md:mb-8">Sample Placements</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+                        <!-- Generating 9 placement blocks -->
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3]"><img src="images/sample-cor-1.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 1"></div>
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3]"><img src="images/sample-cor-2.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 2"></div>
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3]"><img src="images/sample-cor-3.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 3"></div>
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3]"><img src="images/sample-cor-4.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 4"></div>
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3]"><img src="images/sample-cor-5.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 5"></div>
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3]"><img src="images/sample-cor-6.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 6"></div>
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3]"><img src="images/sample-cor-7.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 7"></div>
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3]"><img src="images/sample-cor-8.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 8"></div>
+                        <div class="aspect-square overflow-hidden bg-[#e8eae3] col-span-2 md:col-span-1"><img src="images/sample-cor-9.jpg" class="lightbox-trigger w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-700 opacity-80" alt="C-Place 9"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center pointer-events-none">
+        <div id="lightbox-backdrop" class="absolute inset-0 bg-ink-dark/95 backdrop-blur-md opacity-0 pointer-events-auto cursor-zoom-out"></div>
+        <img id="lightbox-image" src="" alt="Fullscreen View" class="relative z-10 max-w-[90vw] max-h-[90vh] object-contain opacity-0 transform scale-95 pointer-events-auto shadow-2xl">
+        <button id="lightbox-close" class="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-ink-cream/50 hover:text-ink-cream transition-colors focus:outline-none z-20 pointer-events-auto">
+            <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+
+    <!-- Decorative Fixed Elements -->
+    <div class="fixed left-4 md:left-6 bottom-6 md:bottom-10 z-30 text-vertical font-mincho text-[10px] md:text-xs tracking-[0.5em] text-ink-dark opacity-40 mix-blend-color-burn" id="fixed-japanese">
+        儚い記憶を肌に
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        
+        <!-- Hero Section -->
+        <section id="hero" class="relative w-full h-screen min-h-[600px] flex flex-col items-center justify-center pt-24 md:pt-20 px-4">
+            <div class="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-20 z-0">
+                <h1 class="text-[20vw] md:text-[15vw] font-garamond font-light text-outline whitespace-nowrap gs-hero-bg">Nostalgia</h1>
+            </div>
+
+            <div class="z-10 text-center flex flex-col items-center relative">
+                <p class="font-mincho text-ink-red text-xs sm:text-sm md:text-base tracking-[0.4em] mb-4 sm:mb-6 gs-hero-item opacity-0 transform translate-y-4">
+                    刺青とノスタルジア
+                </p>
+                <h1 class="font-garamond text-5xl sm:text-6xl md:text-8xl lg:text-9xl tracking-tighter text-ink-dark mb-4 gs-hero-item opacity-0 transform translate-y-8">
+                    Inkstetik.
+                </h1>
+                <p class="font-gothic font-light text-ink-dark opacity-60 tracking-widest text-xs md:text-sm mt-4 md:mt-6 max-w-sm md:max-w-md px-2 leading-relaxed gs-hero-item opacity-0 transform translate-y-4">
+                    “with a delicate hand and a heart full of artistry, i have the privilege of adorning skin with lasting designs...”
+                </p>
+                
+                <div class="mt-12 md:mt-16 animate-bounce opacity-50 gs-hero-item opacity-0">
+                    <svg class="w-4 h-4 text-ink-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy Section -->
+        <section id="philosophy" class="relative w-full min-h-screen py-20 md:py-32 flex items-center z-10 px-6 md:px-20">
+            <div class="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+                
+                <!-- Left: Poetic Text -->
+                <div class="space-y-8 md:space-y-12">
+                    <h2 class="font-mincho text-3xl sm:text-4xl md:text-5xl text-ink-dark leading-snug gs-fade-up">
+                        <span class="block text-ink-red text-sm md:text-lg mb-3 md:mb-4 tracking-widest">01. 哲学</span>
+                        Where <span class="text-ink-red">Ink</span> meets <br>
+                        <span class="text-ink-red">Aesthetic</span>
+                    </h2>
+                    <div class="font-gothic font-light text-ink-dark opacity-80 leading-loose tracking-wide gs-fade-up space-y-4 md:space-y-6 text-sm md:text-base">
+                        <p>
+                            Inkstetik, a combination of "ink" and "aesthetic," encapsulates our idea: to elevate tattooing beyond mere ink and skin, transforming it into a form of self-expression that resonates with both artistic beauty and personal meaning.
+                        </p>
+                        <p>
+                            We are dedicated to create an experience that is as transformative and meaningful as the art we create, understanding the great influence it can have on people.
+                        </p>
+                    </div>
+                    <p class="font-mincho text-lg md:text-xl text-ink-dark opacity-60 italic gs-fade-up">
+                        「どこか懐かしい、夢のような時間。」
+                    </p>
+                </div>
+
+                <!-- Right: Stylized Visual -->
+                <div class="relative h-[40vh] md:h-[60vh] w-full poetic-frame gs-mask-reveal mt-8 md:mt-0">
+                    <!-- Abstract representation instead of heavy images -->
+                    <div class="absolute inset-0 bg-[#e0e3da] flex items-center justify-center parallax-bg">
+                        <img src="images/123logo-small.png" alt="Philosophy Visual" class="w-full h-full object-cover opacity-70 filter grayscale brightness-[1.2] cursor-pointer">
+                    </div>
+                    <div class="absolute bottom-4 left-4 md:bottom-6 md:left-6 text-ink-dark font-garamond text-xs md:text-sm italic opacity-50">
+                        INKSTETIK — Body. Story. Art.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Artist Section -->
+        <section id="artist" class="relative w-full min-h-screen py-20 md:py-32 flex items-center z-10 px-6 md:px-20">
+            <div class="max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
+                
+                <!-- Left: Stylized Visual (Artist Image) -->
+                <div class="relative h-[40vh] md:h-[60vh] w-full poetic-frame gs-mask-reveal order-2 md:order-1 mt-8 md:mt-0">
+                    <div class="absolute inset-0 parallax-bg">
+                        <img src="images/gael.jpg" alt="Gael - Tattoo Artist" class="w-full h-full object-cover opacity-90 filter grayscale-[0.2] sepia-[0.2] cursor-pointer">
+                    </div>
+                    <div class="absolute bottom-4 left-4 md:bottom-6 md:left-6 text-ink-cream font-garamond text-xs md:text-sm italic opacity-80 z-10 drop-shadow-md">
+                        Gael - The Artist
+                    </div>
+                </div>
+
+                <!-- Right: Poetic Text (Artist Details) -->
+                <div class="space-y-8 md:space-y-12 order-1 md:order-2">
+                    <h2 class="font-mincho text-3xl sm:text-4xl md:text-5xl text-ink-dark leading-snug gs-fade-up">
+                        <span class="block text-ink-red text-sm md:text-lg mb-3 md:mb-4 tracking-widest">アーティスト</span>
+                        Meet the Artist
+                    </h2>
+                    
+                    <div class="font-gothic font-light text-ink-dark opacity-80 leading-loose tracking-wide gs-fade-up space-y-4 md:space-y-6 text-sm md:text-base">
+                        <p>
+                            Hi, I'm <span class="text-ink-red font-mincho text-xl md:text-2xl italic pr-1">Gael!</span> a female tattoo artist of inkstetik with a passion for distinct illustrative, surreal aesthetics, sketchy lines, and minimalist tattoo. my goal is to create meaningful and lasting artwork that empowers you and serves as a constant source of inspiration.
+                        </p>
+                        <p>
+                            When I'm not tattooing, you can find me drawing in the corner of my room while listening to music, exploring new coffee shops, sometimes singing or playing a guitar, and fangirling on seventeen especially about minwon—hello carats!
+                        </p>
+                        <p>
+                            And I have a very relaxed and easy-going personality, which I find really helps clients feel comfortable and at ease, especially if it's their first tattoo. I believe in creating a judgment-free and welcoming environment.
+                        </p>
+                    </div>
+
+                    <div class="space-y-4 md:space-y-6 gs-fade-up">
+                        <p class="font-mincho text-lg md:text-xl text-ink-dark opacity-60 italic">
+                            "your ideas, my ink: let's make something unique at inkstetik."
+                        </p>
+                        <p class="font-gothic text-[9px] md:text-xs tracking-[0.2em] text-ink-dark/60 uppercase leading-relaxed">
+                            Based in: Manila City • Appointment availability: Mon - Sat
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Boji Section -->
+        <section id="boji" class="relative w-full py-12 md:py-16 px-6 md:px-20 z-10 flex justify-center border-b border-ink-dark/5">
+            <div class="max-w-3xl w-full flex flex-col md:flex-row items-center gap-6 md:gap-12 bg-[#e0e3da]/40 p-6 md:p-12 poetic-frame gs-fade-up">
+                
+                <!-- 1x1 Image -->
+                <div class="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 shrink-0 aspect-square poetic-frame overflow-hidden border-4 border-ink-cream shadow-sm group">
+                    <img src="images/boji.jpg" alt="Boji the Dog" class="w-full h-full object-cover filter sepia-[0.2] transition-all duration-700 group-hover:scale-105 group-hover:sepia-0 cursor-pointer">
+                </div>
+
+                <!-- Dog Details -->
+                <div class="text-center md:text-left space-y-3 md:space-y-4 mt-4 md:mt-0">
+                    <span class="font-mincho text-ink-red tracking-widest text-[10px] md:text-xs block">アシスタント</span>
+                    <h3 class="font-garamond text-2xl sm:text-3xl md:text-4xl text-ink-dark">Boji — The Burog</h3>
+                    <p class="font-gothic text-xs sm:text-sm md:text-base leading-relaxed text-ink-dark opacity-80">
+                        The chief distraction of Gael, specializes in ignoring doorbells and precision napping.
+                    </p>
+                    <div class="pt-2 md:pt-4">
+                        <span class="font-gothic text-[10px] md:text-xs tracking-widest text-ink-red inline-block px-3 py-1.5 md:px-4 md:py-2 bg-ink-cream border border-ink-dark/5 shadow-sm">
+                            Availability: EVERYDAY
+                        </span>
+                    </div>
+                </div>
+                
+            </div>
+        </section>
+
+        <!-- Collections Showcase Carousel Section -->
+        <section id="vibe" class="relative w-full py-20 md:py-32 overflow-hidden z-10">
+            <div class="max-w-7xl mx-auto px-6 md:px-20 mb-12 md:mb-16">
+                <div class="text-center gs-fade-up">
+                    <span class="font-mincho text-ink-red tracking-widest text-[10px] md:text-sm mb-2 block">コレクション</span>
+                    <h2 class="font-garamond text-3xl sm:text-4xl md:text-5xl text-ink-dark">Collections Showcase</h2>
+                    <p class="font-gothic text-[10px] md:text-sm tracking-[0.15em] text-ink-dark opacity-60 mt-4 md:mt-6 uppercase">
+                        Explore designs from our exclusive collections: Paper Thoughts and Coraline.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Carousel Wrapper -->
+            <div class="w-full relative flex overflow-hidden group gs-fade-up">
+                <!-- Fade Edges -->
+                <div class="absolute top-0 bottom-0 left-0 w-16 md:w-48 z-20 pointer-events-none transition-colors duration-1000 carousel-gradient-left"></div>
+                <div class="absolute top-0 bottom-0 right-0 w-16 md:w-48 z-20 pointer-events-none transition-colors duration-1000 carousel-gradient-right"></div>
+
+                <!-- Scrolling Track (contains 2 identical flex rows for seamless loop) -->
+                <div class="flex w-max animate-carousel hover:[animation-play-state:paused]">
+                    
+                    <!-- Set 1 -->
+                    <div class="flex gap-4 md:gap-10 px-2 md:px-5">
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-pt-5.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Paper Thoughts Collection">
+                        </div>
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-pt-1.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Paper Thoughts Collection">
+                        </div>
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-pt-2.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Paper Thoughts Collection">
+                        </div>
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-cor-2.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Coraline Collection">
+                        </div>
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-cor-1.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Coraline Collection">
+                        </div>
+                    </div>
+
+                    <!-- Set 2 (Identical for seamless loop) -->
+                    <div class="flex gap-4 md:gap-10 px-2 md:px-5">
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-pt-3.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Paper Thoughts Collection">
+                        </div>
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-pt-4.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Paper Thoughts Collection">
+                        </div>
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-cor-9.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Paper Thoughts Collection">
+                        </div>
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-cor-8.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Coraline Collection">
+                        </div>
+                        <div class="w-[70vw] md:w-[25vw] aspect-[4/5] poetic-frame shrink-0 overflow-hidden cursor-pointer">
+                            <img src="images/sample-cor-6.jpg" class="lightbox-trigger w-full h-full object-cover opacity-80 filter sepia-[.3] grayscale-[.4] hover:scale-105 hover:filter-none hover:opacity-100 transition-all duration-700" alt="Coraline Collection">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Selected Works Section -->
+        <section id="works" class="relative w-full py-20 md:py-32 px-6 md:px-20 overflow-hidden z-10">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16 md:mb-24 gs-fade-up">
+                    <span class="font-mincho text-ink-red tracking-widest text-[10px] md:text-sm mb-2 block">過去の作品</span>
+                    <h2 class="font-garamond text-3xl sm:text-4xl md:text-5xl text-ink-dark">Selected Works</h2>
+                    <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] mt-4 md:mt-6 text-ink-dark opacity-50 uppercase">9 Fragments of Memory</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 md:gap-x-10 gap-y-12 md:gap-y-16">
+                    <!-- Photo 01 -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo1.jpg" alt="Work 01" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 01</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">一</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Photo 02 (Staggered on lg) -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up lg:mt-16">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo2.jpg" alt="Work 02" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 02</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">二</span>
+                        </div>
+                    </div>
+
+                    <!-- Photo 03 (Staggered deeper on lg) -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up lg:mt-32">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo3.jpg" alt="Work 03" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 03</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">三</span>
+                        </div>
+                    </div>
+
+                    <!-- Photo 04 -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo4.jpg" alt="Work 04" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 04</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">四</span>
+                        </div>
+                    </div>
+
+                    <!-- Photo 05 (Staggered on lg) -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up lg:mt-16">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo5.jpg" alt="Work 05" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 05</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">五</span>
+                        </div>
+                    </div>
+
+                    <!-- Photo 06 (Staggered deeper on lg) -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up lg:mt-32">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo6.jpg" alt="Work 06" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 06</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">六</span>
+                        </div>
+                    </div>
+
+                    <!-- Photo 07 -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo7.jpg" alt="Work 07" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 07</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">七</span>
+                        </div>
+                    </div>
+
+                    <!-- Photo 08 (Staggered on lg) -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up lg:mt-16">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo8.jpg" alt="Work 08" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 08</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">八</span>
+                        </div>
+                    </div>
+
+                    <!-- Photo 09 (Centered on sm/md screens) -->
+                    <div class="flex flex-col gap-3 md:gap-4 gs-fade-up lg:mt-32 sm:col-span-2 lg:col-span-1 sm:w-1/2 sm:mx-auto lg:w-full">
+                        <div class="w-full aspect-[4/5] poetic-frame group cursor-pointer">
+                            <img src="images/tattoo9.jpg" alt="Work 09" class="lightbox-trigger w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 opacity-80 filter sepia-[.3] grayscale-[.5] group-hover:filter-none group-hover:opacity-100">
+                        </div>
+                        <div class="flex justify-between items-center px-1">
+                            <p class="font-gothic text-[10px] md:text-xs tracking-[0.2em] text-ink-dark/40 uppercase">Work 09</p>
+                            <span class="font-mincho text-[10px] md:text-xs text-ink-red/60">九</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Booking & Transition to Dark Section -->
+        <!-- The body background color will change when this hits the viewport -->
+        <section id="booking" class="relative w-full min-h-screen py-20 md:py-32 flex flex-col items-center justify-center px-6 text-center z-10" data-theme="dark">
+            
+            <div class="max-w-2xl mx-auto space-y-8 md:space-y-10">
+                <div class="gs-fade-up">
+                    <svg class="w-6 h-6 md:w-8 md:h-8 mx-auto text-ink-red mb-6 md:mb-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <path d="M21.5 12C21.5 17.2467 17.2467 21.5 12 21.5C6.75329 21.5 2.5 17.2467 2.5 12C2.5 6.75329 6.75329 2.5 12 2.5C17.2467 2.5 21.5 6.75329 21.5 12Z" stroke-dasharray="4 4"/>
+                        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                    </svg>
+                    <span class="font-gothic text-ink-red tracking-[0.3em] text-[9px] md:text-xs mb-3 md:mb-4 block uppercase">Booking & Consultations</span>
+                    <h2 class="font-mincho text-3xl sm:text-4xl md:text-6xl text-ink-cream mb-4 md:mb-6">予約と相談</h2>
+                    <p class="font-gothic font-light text-ink-cream opacity-70 tracking-wide leading-loose text-sm md:text-base px-2">
+                        We are currently taking inquiries for new visions. <br class="hidden sm:block">
+                        Let us craft a permanent memory together in our quiet space.
+                    </p>
+                </div>
+
+                <div class="pt-6 md:pt-8 gs-fade-up">
+                    <a href="https://forms.gle/PqSX8Pi8sJuumXb66" target="_blank" rel="noopener noreferrer" class="group relative inline-flex items-center justify-center px-8 py-3 md:px-10 md:py-4 font-garamond text-lg md:text-xl tracking-widest text-ink-cream border border-ink-cream/30 hover:border-ink-red transition-colors duration-500 overflow-hidden">
+                        <span class="relative z-10 group-hover:text-ink-cream transition-colors duration-500">Inquire via Form</span>
+                        <div class="absolute inset-0 bg-ink-red transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-500 ease-in-out z-0"></div>
+                    </a>
+                    <p class="mt-4 md:mt-6 font-gothic text-[10px] md:text-xs text-ink-cream opacity-40 tracking-widest">※ Google Forms will open in a new tab</p>
+                </div>
+
+                <!-- Connect With Us Section -->
+                <div class="pt-16 md:pt-24 mt-8 md:mt-12 border-t border-ink-cream/10 gs-fade-up">
+                    <h3 class="font-mincho text-2xl md:text-3xl text-ink-cream mb-4 md:mb-6 tracking-widest">Connect With Us</h3>
+                    <p class="font-gothic font-light text-ink-cream opacity-70 text-xs md:text-sm max-w-sm md:max-w-md mx-auto leading-loose mb-6 md:mb-8 px-4">
+                        I'm just a message away! Connect with me for inquiries, bookings, and collaborations.
+                    </p>
+                    <div class="space-y-3 md:space-y-4 font-gothic tracking-widest text-xs md:text-sm text-ink-cream opacity-80">
+                        <p>+63 912 345 6789</p>
+                        <p class="uppercase">inkstetik@gmail.com</p>
+                    </div>
+                    
+                    <!-- Icons -->
+                    <div class="flex justify-center gap-6 md:gap-8 mt-8 md:mt-10 text-ink-red">
+                        <a href="https://www.facebook.com/share/1A3dq2ZtiF/?mibextid=wwXIfr" aria-label="Facebook" class="hover:text-ink-cream hover:scale-110 transition-all duration-300">
+                            <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg>
+                        </a>
+                        <a href="https://www.instagram.com/inkstetik" aria-label="Instagram" class="hover:text-ink-cream hover:scale-110 transition-all duration-300">
+                            <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25zM12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>
+                        </a>
+                        <a href="https://www.tiktok.com/@inkstetiktattoo" aria-label="TikTok" class="hover:text-ink-cream hover:scale-110 transition-all duration-300">
+                            <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 2.78-1.15 5.54-3.33 7.31-1.92 1.56-4.6 2.05-6.93 1.44-2.15-.56-4.04-2.07-4.88-4.08-.85-2.03-.87-4.47-.04-6.52.8-1.95 2.5-3.5 4.54-4.14 1.76-.55 3.66-.54 5.43-.16V14.9c-1.07-.3-2.22-.21-3.21.28-1.03.5-1.78 1.5-1.95 2.6-.14.93.18 1.93.89 2.54.72.61 1.75.84 2.66.57 1.01-.29 1.79-1.21 1.94-2.26.04-.3.04-.61.04-.91V.02h.74z"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer area within the dark section -->
+            <footer class="absolute bottom-0 w-full p-6 md:p-8 text-center border-t border-ink-cream/10">
+                <p class="font-gothic text-[10px] md:text-xs tracking-widest text-ink-cream opacity-30">
+                    &copy; 2026 INKSTETIK.
+                </p>
+            </footer>
+        </section>
+
+    </main>
+
+    <script>
+        // Wait for DOM
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            // --- 1. Loader & Initialization ---
+            const loader = document.getElementById('loader');
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    initGSAPAnimations();
+                }, 1500);
+            }, 800);
+
+            // --- 3. Three.js Ambient Background ---
+            const initThreeJS = () => {
+                const canvas = document.getElementById('ambient-canvas');
+                const scene = new THREE.Scene();
+                
+                // Camera
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 50;
+
+                // Renderer
+                const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+                // Particles (Sakura / Dust motes)
+                const particlesGeometry = new THREE.BufferGeometry();
+                const particlesCount = 150;
+                const posArray = new Float32Array(particlesCount * 3);
+                const scales = new Float32Array(particlesCount);
+
+                for(let i = 0; i < particlesCount * 3; i+=3) {
+                    posArray[i] = (Math.random() - 0.5) * 100;     // x
+                    posArray[i+1] = (Math.random() - 0.5) * 100;   // y
+                    posArray[i+2] = (Math.random() - 0.5) * 50;    // z
+                    scales[i/3] = Math.random();
+                }
+
+                particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+                particlesGeometry.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
+
+                // Create a soft glowing circle texture programmatically
+                const createParticleTexture = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 32; canvas.height = 32;
+                    const context = canvas.getContext('2d');
+                    const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+                    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+                    gradient.addColorStop(0.2, 'rgba(148,14,14,0.8)'); // ink-red core
+                    gradient.addColorStop(1, 'rgba(148,14,14,0)');
+                    context.fillStyle = gradient;
+                    context.fillRect(0,0,32,32);
+                    return new THREE.CanvasTexture(canvas);
+                };
+
+                const material = new THREE.PointsMaterial({
+                    size: 1.5,
+                    map: createParticleTexture(),
+                    transparent: true,
+                    opacity: 0.6,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+
+                const particlesMesh = new THREE.Points(particlesGeometry, material);
+                scene.add(particlesMesh);
+
+                // Mouse interaction setup
+                let mouseX = 0;
+                let mouseY = 0;
+                let targetX = 0;
+                let targetY = 0;
+
+                const windowHalfX = window.innerWidth / 2;
+                const windowHalfY = window.innerHeight / 2;
+
+                document.addEventListener('mousemove', (event) => {
+                    mouseX = (event.clientX - windowHalfX);
+                    mouseY = (event.clientY - windowHalfY);
+                });
+
+                // Animation Loop
+                const clock = new THREE.Clock();
+
+                const animate = () => {
+                    const elapsedTime = clock.getElapsedTime();
+                    
+                    targetX = mouseX * 0.001;
+                    targetY = mouseY * 0.001;
+
+                    // Soft slow rotation and movement
+                    particlesMesh.rotation.y += 0.0005;
+                    particlesMesh.rotation.x += 0.0002;
+                    
+                    // Gentle vertical drift
+                    const positions = particlesMesh.geometry.attributes.position.array;
+                    for(let i = 1; i < particlesCount * 3; i+=3) {
+                        positions[i] -= 0.02; // falling slowly
+                        if(positions[i] < -50) {
+                            positions[i] = 50; // reset to top
+                        }
+                    }
+                    particlesMesh.geometry.attributes.position.needsUpdate = true;
+
+                    // Parallax based on mouse
+                    camera.position.x += (mouseX * 0.01 - camera.position.x) * 0.05;
+                    camera.position.y += (-mouseY * 0.01 - camera.position.y) * 0.05;
+                    camera.lookAt(scene.position);
+
+                    renderer.render(scene, camera);
+                    requestAnimationFrame(animate);
+                };
+
+                animate();
+
+                // Resize handler
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+                
+                // Expose material to global for theme changing
+                window.ambientMaterial = material;
+            };
+
+            initThreeJS();
+
+            // --- 4. GSAP Animations & Scroll Logic ---
+            const initGSAPAnimations = () => {
+                gsap.registerPlugin(ScrollTrigger);
+
+                // Hero initial animation
+                const tl = gsap.timeline();
+                tl.to('.gs-hero-item', {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1.5,
+                    stagger: 0.2,
+                    ease: "power3.out"
+                }, "+=0.2")
+                .fromTo('.gs-hero-bg', 
+                    { scale: 0.9, opacity: 0 }, 
+                    { scale: 1, opacity: 1, duration: 3, ease: "power2.out" }, 
+                "-=1.5");
+
+                // Scroll triggered fade ups
+                gsap.utils.toArray('.gs-fade-up').forEach(element => {
+                    gsap.fromTo(element, 
+                        { y: 50, opacity: 0 },
+                        {
+                            y: 0, 
+                            opacity: 1,
+                            duration: 1.2,
+                            ease: "power2.out",
+                            scrollTrigger: {
+                                trigger: element,
+                                start: "top 85%",
+                                toggleActions: "play none none reverse"
+                            }
+                        }
+                    );
+                });
+
+                // Image Mask Reveals
+                gsap.utils.toArray('.gs-mask-reveal').forEach(element => {
+                    gsap.fromTo(element,
+                        { clipPath: "inset(100% 0 0 0)" },
+                        {
+                            clipPath: "inset(0% 0 0 0)",
+                            duration: 1.5,
+                            ease: "power3.inOut",
+                            scrollTrigger: {
+                                trigger: element,
+                                start: "top 80%",
+                            }
+                        }
+                    );
+                });
+
+                // Subtle parallax on internal backgrounds
+                gsap.utils.toArray('.parallax-bg').forEach(bg => {
+                    gsap.to(bg, {
+                        yPercent: 20,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: bg.parentElement,
+                            start: "top bottom",
+                            end: "bottom top",
+                            scrub: true
+                        }
+                    });
+                });
+
+                // --- 5. Theme Transition (Light to Dark) ---
+                const bookingSection = document.getElementById('booking');
+                const fixedJapanese = document.getElementById('fixed-japanese');
+                const header = document.querySelector('header');
+                
+                ScrollTrigger.create({
+                    trigger: bookingSection,
+                    start: "top 60%",
+                    end: "bottom top",
+                    onEnter: () => setDarkTheme(true),
+                    onLeaveBack: () => setDarkTheme(false),
+                });
+
+                function setDarkTheme(isDark) {
+                    const body = document.body;
+                    const noise = document.getElementById('noise');
+                    
+                    if(isDark) {
+                        body.style.backgroundColor = '#222222';
+                        body.classList.add('dark-theme');
+                        noise.classList.add('dark-mode-noise');
+                        fixedJapanese.style.color = '#F4F6F0';
+                        fixedJapanese.style.mixBlendMode = 'normal';
+                        fixedJapanese.style.opacity = '0.2';
+                        
+                        // Change ThreeJS particles to warm white
+                        if(window.ambientMaterial) {
+                            gsap.to(window.ambientMaterial.color, { r: 1, g: 0.9, b: 0.8, duration: 1 });
+                        }
+                    } else {
+                        body.style.backgroundColor = '#F4F6F0';
+                        body.classList.remove('dark-theme');
+                        noise.classList.remove('dark-mode-noise');
+                        fixedJapanese.style.color = '#222222';
+                        fixedJapanese.style.mixBlendMode = 'color-burn';
+                        fixedJapanese.style.opacity = '0.4';
+                        
+                        // Change ThreeJS particles back to ink-red
+                        if(window.ambientMaterial) {
+                            gsap.to(window.ambientMaterial.color, { r: 1, g: 1, b: 1, duration: 1 });
+                        }
+                    }
+                }
+
+                // --- 6. Care Guide Modal Logic ---
+                const careModal = document.getElementById('care-modal');
+                const modalBackdrop = document.getElementById('care-modal-backdrop');
+                const modalContent = document.getElementById('care-modal-content');
+                const btnOpen = document.getElementById('care-modal-open');
+                const btnClose = document.getElementById('care-modal-close');
+
+                const tabBefore = document.getElementById('tab-before');
+                const tabAfter = document.getElementById('tab-after');
+                const contentBefore = document.getElementById('content-before');
+                const contentAfter = document.getElementById('content-after');
+
+                // Open Modal
+                btnOpen.addEventListener('click', () => {
+                    careModal.classList.remove('hidden');
+                    // Prevent body scroll when modal is open
+                    document.body.style.overflow = 'hidden'; 
+                    
+                    gsap.to(modalBackdrop, { opacity: 1, duration: 0.4, ease: "power2.out" });
+                    gsap.fromTo(modalContent, 
+                        { y: 30, opacity: 0 }, 
+                        { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.1 }
+                    );
+                });
+
+                // Close Modal
+                const closeModal = () => {
+                    document.body.style.overflow = '';
+                    
+                    gsap.to(modalContent, { y: 20, opacity: 0, duration: 0.3, ease: "power2.in" });
+                    gsap.to(modalBackdrop, { opacity: 0, duration: 0.4, ease: "power2.in", onComplete: () => {
+                        careModal.classList.add('hidden');
+                    }});
+                };
+
+                btnClose.addEventListener('click', closeModal);
+                modalBackdrop.addEventListener('click', closeModal);
+
+                // Tab Switching
+                const switchTab = (activeTab, inactiveTab, activeContent, inactiveContent) => {
+                    // Update tab styles
+                    activeTab.classList.replace('border-transparent', 'border-ink-red');
+                    activeTab.classList.replace('text-ink-dark/40', 'text-ink-red');
+                    
+                    inactiveTab.classList.replace('border-ink-red', 'border-transparent');
+                    inactiveTab.classList.replace('text-ink-red', 'text-ink-dark/40');
+
+                    // Switch content with slight fade
+                    inactiveContent.classList.add('hidden');
+                    activeContent.classList.remove('hidden');
+                    gsap.fromTo(activeContent, 
+                        { opacity: 0, y: 10 }, 
+                        { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }
+                    );
+                };
+
+                tabBefore.addEventListener('click', () => switchTab(tabBefore, tabAfter, contentBefore, contentAfter));
+                tabAfter.addEventListener('click', () => switchTab(tabAfter, tabBefore, contentAfter, contentBefore));
+
+                // --- 7. Flashes Modal Logic ---
+                const flashesModal = document.getElementById('flashes-modal');
+                const flashesBackdrop = document.getElementById('flashes-modal-backdrop');
+                const flashesContent = document.getElementById('flashes-modal-content');
+                const btnFlashesOpen = document.getElementById('flashes-modal-open');
+                const btnFlashesClose = document.getElementById('flashes-modal-close');
+
+                const viewMenu = document.getElementById('flashes-view-menu');
+                const viewPaper = document.getElementById('flashes-view-paper');
+                const viewCoraline = document.getElementById('flashes-view-coraline');
+
+                const btnPaper = document.getElementById('btn-paper-thoughts');
+                const btnCoraline = document.getElementById('btn-coraline');
+                const btnsBack = document.querySelectorAll('.back-to-menu');
+
+                // Open Modal (Defaults to Menu)
+                btnFlashesOpen.addEventListener('click', () => {
+                    flashesModal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden'; 
+                    
+                    // Reset to menu view
+                    viewPaper.classList.add('hidden');
+                    viewCoraline.classList.add('hidden');
+                    viewMenu.classList.remove('hidden');
+                    gsap.set(viewMenu, { opacity: 1, y: 0 });
+
+                    gsap.to(flashesBackdrop, { opacity: 1, duration: 0.4, ease: "power2.out" });
+                    gsap.fromTo(flashesContent, 
+                        { y: 30, opacity: 0 }, 
+                        { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.1 }
+                    );
+                });
+
+                // Close Modal
+                const closeFlashesModal = () => {
+                    document.body.style.overflow = '';
+                    gsap.to(flashesContent, { y: 20, opacity: 0, duration: 0.3, ease: "power2.in" });
+                    gsap.to(flashesBackdrop, { opacity: 0, duration: 0.4, ease: "power2.in", onComplete: () => {
+                        flashesModal.classList.add('hidden');
+                    }});
+                };
+
+                btnFlashesClose.addEventListener('click', closeFlashesModal);
+                flashesBackdrop.addEventListener('click', closeFlashesModal);
+
+                // Internal View Switching
+                const transitionFlashesView = (hideView, showView) => {
+                    gsap.to(hideView, { opacity: 0, y: -10, duration: 0.3, onComplete: () => {
+                        hideView.classList.add('hidden');
+                        showView.classList.remove('hidden');
+                        flashesContent.scrollTo({ top: 0, behavior: 'smooth' });
+                        gsap.fromTo(showView, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
+                    }});
+                };
+
+                btnPaper.addEventListener('click', () => transitionFlashesView(viewMenu, viewPaper));
+                btnCoraline.addEventListener('click', () => transitionFlashesView(viewMenu, viewCoraline));
+                
+                btnsBack.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const currentView = e.target.closest('div[id^="flashes-view-"]');
+                        transitionFlashesView(currentView, viewMenu);
+                    });
+                });
+
+                // --- 8. Global Lightbox Logic ---
+                const lightboxModal = document.getElementById('lightbox-modal');
+                const lightboxBackdrop = document.getElementById('lightbox-backdrop');
+                const lightboxImage = document.getElementById('lightbox-image');
+                const lightboxClose = document.getElementById('lightbox-close');
+
+                // Attach click event to anything with 'lightbox-trigger'
+                document.querySelectorAll('.lightbox-trigger').forEach(img => {
+                    img.addEventListener('click', () => {
+                        const src = img.getAttribute('src');
+                        lightboxImage.setAttribute('src', src);
+                        
+                        lightboxModal.classList.remove('hidden');
+                        // Ensure body doesn't scroll behind lightbox (even if other modals are open)
+                        document.body.style.overflow = 'hidden'; 
+
+                        gsap.to(lightboxBackdrop, { opacity: 1, duration: 0.3, ease: "power2.out" });
+                        gsap.fromTo(lightboxImage, 
+                            { scale: 0.95, opacity: 0 }, 
+                            { scale: 1, opacity: 1, duration: 0.4, ease: "power3.out", delay: 0.1 }
+                        );
+                    });
+                });
+
+                const closeLightbox = () => {
+                    gsap.to(lightboxImage, { scale: 0.95, opacity: 0, duration: 0.3, ease: "power2.in" });
+                    gsap.to(lightboxBackdrop, { opacity: 0, duration: 0.3, ease: "power2.in", onComplete: () => {
+                        lightboxModal.classList.add('hidden');
+                        lightboxImage.setAttribute('src', '');
+                        
+                        // Check if a parent modal is still open, if not, restore body scroll
+                        if (careModal.classList.contains('hidden') && flashesModal.classList.contains('hidden')) {
+                            document.body.style.overflow = '';
+                        }
+                    }});
+                };
+
+                lightboxClose.addEventListener('click', closeLightbox);
+                lightboxBackdrop.addEventListener('click', closeLightbox);
+            };
+        });
+    </script>
+</body>
+</html>
