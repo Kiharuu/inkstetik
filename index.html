@@ -167,12 +167,13 @@
     <canvas id="ambient-canvas"></canvas>
 
     <!-- Navigation / Header -->
-    <header class="fixed top-0 w-full p-4 sm:p-6 md:p-10 flex flex-wrap justify-between items-center z-40 mix-blend-difference text-ink-cream gap-y-4">
+    <header class="fixed top-0 w-full p-4 sm:p-6 md:p-10 flex justify-between items-center z-40 mix-blend-difference text-ink-cream">
         <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="font-garamond text-lg md:text-xl tracking-widest uppercase focus:outline-none cursor-pointer">
             Inkstetik
         </button>
         
-        <div class="flex items-center gap-4 md:gap-6 flex-wrap justify-end">
+        <!-- Desktop Links -->
+        <div class="hidden md:flex items-center gap-4 md:gap-6 justify-end">
             <!-- Artist Link -->
             <a href="#artist" class="text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1">
                 Artist
@@ -184,12 +185,12 @@
             </a>
 
             <!-- Flashes Toggle -->
-            <button id="flashes-modal-open" class="text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1 focus:outline-none">
+            <button class="js-flashes-open text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1 focus:outline-none">
                 Flashes
             </button>
 
             <!-- Care Guide Toggle -->
-            <button id="care-modal-open" class="text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1 focus:outline-none">
+            <button class="js-care-open text-[10px] md:text-xs font-gothic tracking-widest hover:opacity-100 opacity-80 transition-opacity uppercase border-b border-transparent hover:border-current pb-1 focus:outline-none">
                 Care Guide
             </button>
 
@@ -198,7 +199,29 @@
                 Inquiry
             </a>
         </div>
+
+        <!-- Mobile Hamburger Button -->
+        <button id="mobile-menu-open" class="md:hidden focus:outline-none p-2 -mr-2 hover:text-ink-red transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
     </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center bg-ink-dark/95 backdrop-blur-md text-ink-cream opacity-0 pointer-events-none">
+        <button id="mobile-menu-close" class="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-ink-cream/50 hover:text-ink-red transition-colors focus:outline-none pointer-events-auto">
+            <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+
+        <div class="flex flex-col items-center gap-8 pointer-events-auto">
+            <a href="#artist" class="js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Artist</a>
+            <a href="#works" class="js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Selected Works</a>
+            <button class="js-flashes-open js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all focus:outline-none">Flashes</button>
+            <button class="js-care-open js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all focus:outline-none">Care Guide</button>
+            <a href="#booking" class="js-mobile-link text-sm tracking-[0.2em] font-gothic uppercase opacity-80 hover:opacity-100 hover:text-ink-red transition-all">Inquiry</a>
+        </div>
+    </div>
 
     <!-- Care Guide Modal -->
     <div id="care-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center pointer-events-none">
@@ -1011,11 +1034,38 @@
                     }
                 }
 
+                // --- Mobile Menu Logic ---
+                const mobileMenu = document.getElementById('mobile-menu');
+                const btnMobileOpen = document.getElementById('mobile-menu-open');
+                const btnMobileClose = document.getElementById('mobile-menu-close');
+                const mobileLinks = document.querySelectorAll('.js-mobile-link');
+
+                const closeMobileMenu = () => {
+                    gsap.to(mobileMenu, { opacity: 0, duration: 0.4, ease: "power2.in", onComplete: () => {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.classList.add('pointer-events-none');
+                        // Only restore body scroll if no other modals are open
+                        if (careModal.classList.contains('hidden') && flashesModal.classList.contains('hidden') && lightboxModal.classList.contains('hidden')) {
+                            document.body.style.overflow = '';
+                        }
+                    }});
+                };
+
+                btnMobileOpen.addEventListener('click', () => {
+                    mobileMenu.classList.remove('hidden');
+                    mobileMenu.classList.remove('pointer-events-none');
+                    document.body.style.overflow = 'hidden';
+                    gsap.to(mobileMenu, { opacity: 1, duration: 0.4, ease: "power2.out" });
+                });
+
+                btnMobileClose.addEventListener('click', closeMobileMenu);
+                mobileLinks.forEach(link => link.addEventListener('click', closeMobileMenu));
+
                 // --- 6. Care Guide Modal Logic ---
                 const careModal = document.getElementById('care-modal');
                 const modalBackdrop = document.getElementById('care-modal-backdrop');
                 const modalContent = document.getElementById('care-modal-content');
-                const btnOpen = document.getElementById('care-modal-open');
+                const btnsCareOpen = document.querySelectorAll('.js-care-open');
                 const btnClose = document.getElementById('care-modal-close');
 
                 const tabBefore = document.getElementById('tab-before');
@@ -1024,16 +1074,18 @@
                 const contentAfter = document.getElementById('content-after');
 
                 // Open Modal
-                btnOpen.addEventListener('click', () => {
-                    careModal.classList.remove('hidden');
-                    // Prevent body scroll when modal is open
-                    document.body.style.overflow = 'hidden'; 
-                    
-                    gsap.to(modalBackdrop, { opacity: 1, duration: 0.4, ease: "power2.out" });
-                    gsap.fromTo(modalContent, 
-                        { y: 30, opacity: 0 }, 
-                        { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.1 }
-                    );
+                btnsCareOpen.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        careModal.classList.remove('hidden');
+                        // Prevent body scroll when modal is open
+                        document.body.style.overflow = 'hidden'; 
+                        
+                        gsap.to(modalBackdrop, { opacity: 1, duration: 0.4, ease: "power2.out" });
+                        gsap.fromTo(modalContent, 
+                            { y: 30, opacity: 0 }, 
+                            { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.1 }
+                        );
+                    });
                 });
 
                 // Close Modal
@@ -1074,7 +1126,7 @@
                 const flashesModal = document.getElementById('flashes-modal');
                 const flashesBackdrop = document.getElementById('flashes-modal-backdrop');
                 const flashesContent = document.getElementById('flashes-modal-content');
-                const btnFlashesOpen = document.getElementById('flashes-modal-open');
+                const btnsFlashesOpen = document.querySelectorAll('.js-flashes-open');
                 const btnFlashesClose = document.getElementById('flashes-modal-close');
 
                 const viewMenu = document.getElementById('flashes-view-menu');
@@ -1086,21 +1138,23 @@
                 const btnsBack = document.querySelectorAll('.back-to-menu');
 
                 // Open Modal (Defaults to Menu)
-                btnFlashesOpen.addEventListener('click', () => {
-                    flashesModal.classList.remove('hidden');
-                    document.body.style.overflow = 'hidden'; 
-                    
-                    // Reset to menu view
-                    viewPaper.classList.add('hidden');
-                    viewCoraline.classList.add('hidden');
-                    viewMenu.classList.remove('hidden');
-                    gsap.set(viewMenu, { opacity: 1, y: 0 });
+                btnsFlashesOpen.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        flashesModal.classList.remove('hidden');
+                        document.body.style.overflow = 'hidden'; 
+                        
+                        // Reset to menu view
+                        viewPaper.classList.add('hidden');
+                        viewCoraline.classList.add('hidden');
+                        viewMenu.classList.remove('hidden');
+                        gsap.set(viewMenu, { opacity: 1, y: 0 });
 
-                    gsap.to(flashesBackdrop, { opacity: 1, duration: 0.4, ease: "power2.out" });
-                    gsap.fromTo(flashesContent, 
-                        { y: 30, opacity: 0 }, 
-                        { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.1 }
-                    );
+                        gsap.to(flashesBackdrop, { opacity: 1, duration: 0.4, ease: "power2.out" });
+                        gsap.fromTo(flashesContent, 
+                            { y: 30, opacity: 0 }, 
+                            { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.1 }
+                        );
+                    });
                 });
 
                 // Close Modal
